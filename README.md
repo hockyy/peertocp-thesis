@@ -4,6 +4,8 @@ The English edition of my bachelor's thesis (Faculty of Computer Science,
 Universitas Indonesia, December 2022; supervisor: Muhammad Hafizhuddin Hilman,
 Ph.D.).
 
+**[Download the PDF](https://github.com/hockyy/peertocp-thesis/releases/latest/download/peertocp-thesis.pdf)**
+
 PeerToCP is a local-first collaborative code editor with a shared shell: one
 user runs a program, and everyone in the room can type into it. The thesis
 builds it three ways (client-server operational transformation, client-server
