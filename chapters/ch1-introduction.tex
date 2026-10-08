@@ -1,0 +1,72 @@
+\chapter{Introduction}
+\label{bab:1}
+
+This chapter sets out the background of the study: how real-time communication technology developed, how it is used on the internet today, and what stands in the way of its wider use. From that background it develops the idea of a collaborative application built on these technologies, and states the research questions, scope, objectives and contributions of the thesis.
+
+\section{Background}
+\label{sec:latarBelakang}
+
+Applications that connect people in real time, in speech or in writing, are increasingly common. During the COVID-19 pandemic, when this study was carried out, companies and schools moved their activities online and needed communication tools they could rely on. Common examples include Google Workspace products such as Google Docs, Google Slides and Google Meet, as well as WhatsApp, LINE, JetBrains Code With Me, Zoom and many others. Multiplayer video games, too, let players interact directly, with latency low enough to feel instantaneous.
+
+Real-time communication (RTC) refers to telecommunication methods in which several users interact with a relatively low latency, that is, a short delay relative to the users' responses~\citep{arefin2013modified}. RTC became a focus of research and practice after WebSocket was introduced in 2008~\citep{fette2011websocket, reynolds2008web}. WebSocket lowers latency and, implemented well, makes real-time communication practical.
+
+Google Docs, one of the most widely used document editors, applies RTC over WebSocket; its real-time collaboration features were developed in 2010~\citep{googledocs1}. Google Docs uses operational transformation (OT), a technique that supports a wide range of collaborative capabilities~\citep{googledocs2,googledocs3}. Research on OT dates back to 1989~\citep{Ellis1989}. Over the years, several correctness issues in OT were found and resolved one by one, and implementations vary widely, each with its own trade-offs in memory and time. One of the developers of Google Wave, the predecessor of Google Docs, needed about two years to finish implementing OT~\citep{shareJS}. Despite the effort, Google Docs became a flagship real-time collaborative text editor built on a client-server architecture, and it is still in use today.
+
+In 2011, WebRTC was introduced as a protocol and application programming interface for two-way, peer-to-peer real-time communication~\citep{dutton2012getting}. After a \emph{signaling} step, WebRTC lets each user communicate with every other user directly, without going through a server. Signaling is the process of initiating a WebRTC data channel connection through a server~\citep{sredojev2015webrtc}. WebRTC was designed mainly for the real-time exchange of larger data, such as audio and video~\citep{dutton2012getting}. Because the server is used only for signaling, its load is also lighter. Compared with a client-server architecture, this tends to improve scalability and network availability for users.
+
+WebRTC has also been studied for other uses, among them real-time collaborative document editing. OT, generally used in client-server architectures, relies on particular properties to make its results converge, which makes it harder to implement in a peer-to-peer architecture~\citep{Sun2017}. As its name suggests, OT resolves conflicts by transforming the editing operations applied to a document~\citep{OTOverview1}. In a client-server architecture, it relies on the server as a \emph{single source of truth} that resolves every operation arriving from its clients.
+
+Conflict-free replicated data types (CRDTs) have emerged as an alternative way to resolve conflicts in peer-to-peer architectures. CRDTs were introduced in 2006 and formally defined in 2011~\citep{Shapiro2011}. They are used in distributed computing and do not require every user to be connected at all times. A CRDT resolves conflicts on the \emph{state} of the document, rather than by transforming its editing operations~\citep{CRDToverview1}. CRDTs can also be used in a client-server architecture, in which the server resolves every conflict and broadcasts the changes to all clients~\citep{Sun2019First}.
+
+Both architectures, client-server and peer-to-peer, have advantages and disadvantages. Concentrating reliability and resources on a server can be limiting, but it is more stable, because the developers provision its performance. A peer-to-peer architecture, on the other hand, reduces the communication overhead between users, who connect directly rather than through a server. Peer-to-peer networks work best when the number of users in a network is small~\citep{leibnitz2007peer, maly2003comparison}. In a full mesh, where every user is connected to every other user, the number of connections grows as $O(N^2)$; data communication then grows quadratically and becomes inefficient, because the same data is sent separately to every user. Whatever the trade-offs, existing real-time collaborative code editors each adopt the architecture their needs call for: the Atom editor with its Teletype plugin, Brackets and JetBrains Code With Me are peer-to-peer, while codecollab, codeshare and Google Docs are client-server.
+
+A collaborative code editor can be developed further into an environment for collaborative competitive programming. Competitive programming is a sport in which individuals or teams solve computational problems under given time and memory limits. The code edited in competitive programming is usually a single file that can be compiled or run on its own, most often in C, C++, Python or Java. This thesis describes the development of a code editor with compiler access and a collaborative shell, which lets every user in a network program together in real time. It also presents a benchmark analysis of three variants of this application, PeerToCP: client-server operational transformation, a peer-to-peer CRDT, and a client-server CRDT.
+
+\section{Research Questions}
+\label{sec:definisiMasalah}
+
+Based on this background, the study sets out to answer the following questions.
+
+\begin{enumerate}
+    \item How can several variants of PeerToCP, an application that provides a real-time collaborative code editor and a shared shell, be implemented?
+    \item How do the WebRTC-based PeerToCP and its other variants compare in performance, latency, and resource usage on the users' machines and on the server?
+    \item Based on that analysis and evaluation, what are the advantages of a peer-to-peer PeerToCP, and when should each variant be used?
+\end{enumerate}
+
+\section{Scope and Limitations}
+\label{sec:batasanMasalah}
+
+The research questions are bounded as follows, to make the scope of the study clear.
+
+\begin{itemize}
+    \item The user interface and user experience of the application are not evaluated with human-computer interaction methods.
+    \item The evaluation assumes unconstrained network connections, and a limited number of users, as is typical in competitive programming.
+    \item PeerToCP builds on existing libraries, modules and frameworks, modified and adapted where needed.
+    \item Minor differences in features and behavior between the variants, which do not significantly affect the operations evaluated, are ignored.
+\end{itemize}
+
+\section{Objectives and Contributions}
+\label{sec:tujuan}
+\label{sec:manfaat}
+
+Within this scope, the study aims to realize the potential of two real-time communication technologies, WebSocket and WebRTC, in PeerToCP, a real-time collaborative competitive programming environment. The implementation is described in detail, including the obstacles met during development and the solutions chosen. The study also compares the implementation variants of PeerToCP through test scenarios that cover the essential operations a user performs. Its contributions are:
+
+\begin{itemize}
+    \item PeerToCP, a desktop collaborative code editor with a shared shell, implemented in three variants: client-server OT, client-server CRDT and peer-to-peer CRDT over WebRTC (Chapter~\ref{bab:4}; the code is listed in Appendix~\ref{appendix:implementation});
+    \item a benchmark of the three variants in four test scenarios with groups of two, four and eight users, covering correctness, latency, and CPU, memory and network usage on the clients and the servers (Chapters~\ref{bab:3} and~\ref{bab:5});
+    \item guidance on when each variant is the better choice (Chapter~\ref{bab:6}).
+\end{itemize}
+
+More broadly, the study is meant to give an overview and a working prototype of real-time communication technologies such as WebRTC (Web Real-Time Communication), and of methods for synchronizing data replicas among the users of a network. The application could be developed further toward production and commercial use. The study can also serve as a reference for other benchmarks of how architectures perform on particular data-communication operations, especially collaborative text editing and real-time data synchronization. Finally, the development problems and obstacles it reports can be studied further, to find better solutions than those presented here.
+
+\section{Thesis Outline}
+
+The rest of the thesis is organized as follows.
+
+\begin{itemize}
+    \item Chapter~\ref{bab:2}, Literature Review, covers the technologies and prior work the study builds on: WebSocket, WebRTC, collaborative code editors, operational transformation and CRDTs, and related work.
+    \item Chapter~\ref{bab:3}, Research Methodology, describes the stages of the study and the aspects on which the system is evaluated.
+    \item Chapter~\ref{bab:4}, Design and Implementation, describes how PeerToCP and its variants are built, and the design of the evaluation.
+    \item Chapter~\ref{bab:5}, Results and Discussion, presents and discusses the results of the performance tests.
+    \item Chapter~\ref{bab:6}, Conclusion, summarizes the findings and suggests directions for future work.
+\end{itemize}

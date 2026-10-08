@@ -1,0 +1,92 @@
+% The same insertion in OT and in a CRDT: ABCDE, a client inserts X between
+% A and B. Top: OT addresses characters by index. Bottom: a CRDT addresses
+% them by ID, a (client, counter) pair, and keeps a deleted character as a
+% tombstone. TikZ libraries: arrows.meta, positioning, fit, backgrounds.
+% Colors from thesis.sty.
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  cell/.style={draw=black!60, line width=0.6pt, fill=white, minimum width=1cm,
+    minimum height=0.6cm, inner sep=0pt, font=\ttfamily\small},
+  obj/.style={draw=black!60, line width=0.6pt, fill=white, rounded corners=2pt,
+    minimum width=0.7cm, minimum height=0.6cm, inner sep=0pt, font=\ttfamily\small},
+  new/.style={draw=accent, fill=accentlight, text=accent, font=\ttfamily\small\bfseries},
+  tomb/.style={draw=rulegray, fill=codebg, text=rulegray, dash pattern=on 2pt off 1.5pt},
+  idx/.style={font=\sffamily\scriptsize, text=black!65, inner sep=1pt},
+  oid/.style={font=\ttfamily\scriptsize, text=black!75, inner sep=1pt},
+  link/.style={line width=0.6pt, black!60, -{Stealth[length=1.6mm,width=1.3mm]}},
+  op/.style={line width=1pt, accent, -{Stealth[length=2.6mm,width=2mm]}},
+  oplab/.style={above, font=\ttfamily\footnotesize, text=accent, inner sep=2pt},
+  title/.style={font=\sffamily\small\bfseries, text=accent, anchor=west, inner sep=0pt},
+  note/.style={font=\sffamily\footnotesize, text=black!70, inner sep=1pt},
+  panel/.style={draw=rulegray, line width=0.6pt, rounded corners=3pt, inner sep=0.25cm},
+  brace/.style={draw=black!45, line width=0.5pt},
+]
+  % Character centers: before at x = 0.5 + i, after at x = 8.9 + i.
+  % ---- OT: by index ------------------------------------------------------
+  \node[title] (t1) at (0,0) {OT: by index};
+  \def\yr{-0.85}
+  \foreach \ch [count=\i from 0] in {A,B,C,D,E} {
+    \node[cell] (o\i) at ({0.5+\i},\yr) {\ch};
+    \node[idx] at ({0.5+\i},\yr-0.52) {\i};
+  }
+  \draw[op] (5.3,\yr) -- node[oplab] {insert(1, X)} (8.1,\yr);
+  \foreach \ch [count=\i from 0] in {A,X,B,C,D,E} {
+    \ifnum\i=1 \node[cell, new] (p\i) at ({8.9+\i},\yr) {\ch};
+    \else \node[cell] (p\i) at ({8.9+\i},\yr) {\ch}; \fi
+  }
+  \node[idx] at (8.9,\yr-0.52) {0};
+  \node[idx, text=accent, font=\sffamily\scriptsize\bfseries] at (9.9,\yr-0.52) {1};
+  \foreach \i in {2,...,5}
+    \node[idx, text=accent, font=\sffamily\scriptsize\bfseries] at ({8.9+\i},\yr-0.52) {\i};
+  % brace under the indices of B..E
+  \def\yb{-1.62}
+  \draw[brace] (10.5,\yb+0.08) -- (10.5,\yb) -- (14.3,\yb) -- (14.3,\yb+0.08);
+  \draw[brace] (12.4,\yb) -- (12.4,\yb-0.08);
+  \node[note, below] (n1) at (12.4,\yb-0.08) {B--E shift: each index $+1$};
+  \begin{scope}[on background layer]
+    \node[panel, fit=(t1)(o0)(p5)(n1)] {};
+  \end{scope}
+
+  % ---- CRDT: by identifier ----------------------------------------------
+  \node[title] (t2) at (0,-2.75) {CRDT: by identifier};
+  \node[note, anchor=west, text=black!60] at (t2.east) {\quad ID = \texttt{(client, counter)}};
+  \def\yo{-4.1}
+  \foreach \ch/\id [count=\i from 0] in {A/{1,1},B/{1,2},C/{1,3},D/{2,1},E/{2,2}} {
+    \node[obj] (q\i) at ({0.5+\i},\yo) {\ch};
+    \node[oid] at ({0.5+\i},\yo-0.52) {(\id)};
+  }
+  \foreach \i [evaluate=\i as \j using int(\i+1)] in {0,...,3}
+    \draw[link] (q\i) -- (q\j);
+  \draw[op] (5.3,\yo) -- node[oplab] {insert(A $\prec$ X $\prec$ B)} (8.1,\yo);
+  % after: A X B C D E, with D deleted (a tombstone)
+  \node[obj] (r0) at (8.9,\yo) {A};
+  \node[obj, new] (r1) at (9.9,\yo) {X};
+  \node[obj] (r2) at (10.9,\yo) {B};
+  \node[obj] (r3) at (11.9,\yo) {C};
+  \node[obj, tomb] (r4) at (12.9,\yo) {D};
+  \node[obj] (r5) at (13.9,\yo) {E};
+  \draw[rulegray, line width=0.8pt] ([xshift=-1.5mm]r4.center) -- ([xshift=1.5mm]r4.center);
+  \foreach \i [evaluate=\i as \j using int(\i+1)] in {0,...,4}
+    \draw[link] (r\i) -- (r\j);
+  \node[oid] at (8.9,\yo-0.52) {(1,1)};
+  \node[oid, text=accent, font=\ttfamily\scriptsize\bfseries] at (9.9,\yo-0.52) {(3,1)};
+  \node[oid] at (10.9,\yo-0.52) {(1,2)};
+  \node[oid] at (11.9,\yo-0.52) {(1,3)};
+  \node[oid, text=rulegray] at (12.9,\yo-0.52) {(2,1)};
+  \node[oid] at (13.9,\yo-0.52) {(2,2)};
+  % X remembers its neighbors at insertion time
+  \draw[accent, line width=0.6pt, -{Stealth[length=1.6mm,width=1.3mm]}]
+    (r1.north) to[out=110, in=70] node[above, font=\sffamily\scriptsize, inner sep=1pt] {left} (r0.north);
+  \draw[accent, line width=0.6pt, -{Stealth[length=1.6mm,width=1.3mm]}]
+    (r1.north) to[out=70, in=110] node[above, font=\sffamily\scriptsize, inner sep=1pt] {right} (r2.north);
+  \node[note, above=1pt of r4, text=black!60, align=center] (n3)
+    {D, deleted by another user:\\[-1pt] kept as a tombstone};
+  % brace under the IDs of B..E
+  \def\yc{-4.87}
+  \draw[brace] (10.5,\yc+0.08) -- (10.5,\yc) -- (14.3,\yc) -- (14.3,\yc+0.08);
+  \draw[brace] (12.4,\yc) -- (12.4,\yc-0.08);
+  \node[note, below] (n2) at (12.4,\yc-0.08) {B--E keep their IDs};
+  \begin{scope}[on background layer]
+    \node[panel, fit=(t2)(q0)(r5)(n2)(n3)] {};
+  \end{scope}
+\end{tikzpicture}%

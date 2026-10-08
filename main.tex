@@ -1,0 +1,90 @@
+% PeerToCP: A WebRTC-Based Real-Time Collaborative Code Editor and Shared Shell
+% English edition of the bachelor's thesis (Universitas Indonesia, 2022).
+% Builds with pdfLaTeX + BibTeX (arXiv) or Tectonic; the look is in thesis.sty.
+\documentclass[11pt,a4paper,oneside]{report}
+
+\usepackage{thesis}
+
+\hypersetup{
+  pdftitle={PeerToCP: A WebRTC-Based Real-Time Collaborative Code Editor and Shared Shell},
+  pdfauthor={Hocky Yudhiono},
+  pdfsubject={Bachelor's thesis, Universitas Indonesia},
+  pdfkeywords={WebRTC, WebSocket, CRDT, operational transformation, collaborative editing, local-first},
+}
+
+\begin{document}
+
+\begin{titlepage}
+  \sffamily
+  {\color{accent}\rule{\linewidth}{2pt}}\par
+  \vspace{2.2cm}
+  {\small\color{accent}\textbf{BACHELOR'S THESIS}\par}
+  \vspace{0.5cm}
+  {\fontsize{34}{40}\selectfont\bfseries PeerToCP\par}
+  \vspace{0.4cm}
+  {\fontsize{18}{24}\selectfont A WebRTC-Based Real-Time Collaborative\\ Code Editor and Shared Shell\par}
+  \vspace{2.5cm}
+  {\Large Hocky Yudhiono\par}
+  \vspace{0.3cm}
+  {\color{rulegray}its@hocky.id\par}
+  \vfill
+  {\small\color{accent}\textbf{SUPERVISOR}\par}
+  \vspace{0.15cm}
+  Muhammad Hafizhuddin Hilman, Ph.D.\par
+  \vspace{1cm}
+  Submitted in partial fulfillment of the requirements for the degree of\\
+  Bachelor of Computer Science\par
+  \vspace{0.3cm}
+  Faculty of Computer Science, Universitas Indonesia\\
+  Depok, Indonesia, December 2022\par
+  \vspace{1cm}
+  {\color{accent}\rule{\linewidth}{0.5pt}}\par
+  \vspace{0.2cm}
+  {\footnotesize\color{rulegray} English edition. The thesis was written and examined in Indonesian as
+  \emph{PeerToCP: Editor Kode dan Shared Shell Kolaboratif dalam Waktu Nyata Berbasis WebRTC}.\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+
+\chapter*{Abstract}
+\markboth{Abstract}{}
+\addcontentsline{toc}{chapter}{Abstract}
+\input{chapters/abstract}
+
+\chapter*{Acknowledgements}
+\markboth{Acknowledgements}{}
+\addcontentsline{toc}{chapter}{Acknowledgements}
+\input{chapters/acknowledgements}
+
+\begingroup
+\setstretch{1.0}
+\tableofcontents
+\listoffigures
+\listoftables
+\endgroup
+
+\clearpage
+\pagenumbering{arabic}
+
+\include{chapters/ch1-introduction}
+\include{chapters/ch2-literature-review}
+\include{chapters/ch3-methodology}
+\include{chapters/ch4-design-implementation}
+\include{chapters/ch5-results}
+\include{chapters/ch6-conclusion}
+
+\begingroup
+\setstretch{1.0}
+\renewcommand{\bibname}{References}
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{References}
+\markboth{References}{}
+\bibliographystyle{apacite}
+\bibliography{references}
+\endgroup
+
+\appendix
+\include{chapters/appendix}
+
+\end{document}

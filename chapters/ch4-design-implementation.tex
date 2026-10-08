@@ -1,0 +1,159 @@
+\chapter{Design and Implementation}
+\label{bab:4}
+
+This chapter describes how PeerToCP is designed and built. It introduces the libraries and frameworks it uses and why they were chosen, the design of the system and how it is used, how each of the three variants keeps its replicas consistent, and finally the test scenarios used to compare them.
+
+\section{Libraries and Frameworks}
+
+PeerToCP builds on several third-party libraries, each chosen for a specific reason. The base of the desktop application is Electron. Figure~\ref{fig:4:components} shows how the components described in this section fit together in one PeerToCP client.
+
+\begin{figure}[htbp]
+    \centering
+    \input{figures/components}
+    \caption[The components of a PeerToCP client]{The components of a PeerToCP client. The renderer process holds the editor and the shared state; the main process compiles and runs programs; the network provider, which differs between the variants, connects the client to its peers or to the server.}
+    \label{fig:4:components}
+\end{figure}
+
+\subsection{Main Framework and Code Editor Component}
+
+Electron is a framework for desktop applications that are built like web applications. Its user interface is rendered by Chromium, from HTML (HyperText Markup Language), CSS (Cascading Style Sheets) and JavaScript, and its back end runs on Node.js~\citep{kredpattanakul2018transforming, miglanielectron}, a JavaScript runtime built on Google's V8 engine~\citep{tilkov2010node}.
+
+Electron applications are cross-platform: they run on Windows, GNU/Linux and macOS. Electron gives access to many operating system functions, such as spawning subprocesses and writing files. Because its front end is written with web technologies, an Electron application is also comparatively easy to port to the web, with its functionality limited to what the web allows. Alternatives include Qt, based on C++, and Tauri, based on Rust. Electron was chosen because widely used libraries for operational transformation, CRDTs, WebSocket and WebRTC already exist in JavaScript and can be used directly from Node.js.
+
+An Electron application has a main process that runs when the application starts~\citep{electron}, and each window it opens is a renderer process. The main PeerToCP window is a code editor. Its renderer process can communicate with the main process at any time, and it opens the shell windows in which compiled programs run. The renderer process renders the front end, much like a web page. The central component of the main window is CodeMirror.
+
+CodeMirror is the code editor component, and the user's main point of interaction with the application. It runs in a web browser and models text with an immutable state and modular change operations. It offers many extensions, good accessibility and support for many programming languages. CodeMirror is also the bridge to Yjs, the CRDT library, which already has a CodeMirror binding.
+
+\subsection{Collaboration Components}
+
+Yjs is a library that implements the YATA (Yet Another Transformation Approach) CRDT~\citep{Nicolaescu2016yjs}. Its core is the shared document, \texttt{Y.Doc}, which holds the CRDT data structures: \texttt{Y.Text} for text, and \texttt{Y.Map} and \texttt{Y.Array}, which PeerToCP combines to store the shells and their history. This study uses all three, each with its own abstraction.
+
+Yjs is not tied to a particular network architecture. This study uses two network providers that connect a \texttt{Y.Doc} to other replicas: y-webrtc, for a full-mesh peer-to-peer network, and y-websocket, for a client-server network. Yjs has many active developers and was still being maintained and developed, which is why it was chosen for this study.
+
+For the operational transformation variant, PeerToCP uses @codemirror/collab, CodeMirror's collaborative editing extension. Its network provider, for the client-server architecture, uses a modified rpc-websockets library that supports broadcasting, messaging a specific client, and asynchronous, non-blocking, promise-based remote procedure calls (RPC).
+
+In the OT variant, to keep the program simple, a shell is stored as an append-only array, following OT principles. The operations on a shell are the users' keystrokes. Keystrokes are passed to the terminal as they are, and the program running in the shell decides how to interpret them. A backspace on the shell's input, for example, is recorded by default as the three characters ``$\texttt{\char`\\ b \char`\\ b}$'' (without the quotes): move the cursor left, write a space and move the cursor left again. To collaborate on a shell, every client sends its keystrokes into one shared input channel, without the separate cursors of the code editor.
+
+\subsection{Shell Component}
+
+A shell that runs programs, and that every client in the network can use, needs a library with access to the operating system, to compile and run code. Compilation converts code in a higher-level, human-readable language into binary code a machine can execute~\citep{aho1985compilers}. Besides editing code together, every user can compile a single-file program, using a compiler installed on their operating system. In Node.js, the library that gives access to it is node-pty.
+
+node-pty is a Node.js library that forks processes attached to pseudoterminals. It streams data to and from a process managed by the operating system, and PeerToCP uses it to run compiled command-line (CLI) programs, which have no graphical user interface. It was chosen because it is widely used and cross-platform. The shell also needs a front end, for which PeerToCP uses xterm.js, a component that displays a terminal on a web page. xterm.js takes input from the browser and displays output, and it can be connected to a process running on the system. It has no dependencies, which is why it was chosen.
+
+\section{System Design}
+
+PeerToCP is a desktop application, which runs directly on the user's computer. This makes offline use easier, since no internet connection is needed to open it. Compiling on a peer also needs access to system calls, which web browser APIs do not provide~\citep{v8, spidermonkey}: browsers are designed this way so that scripts cannot attack the computer's operating system directly. Figure~\ref{fig:4:app} shows the application, and Figure~\ref{fig:activity} outlines how it is used.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.82\linewidth]{figures/app-main-window}\\[0.6em]
+    \includegraphics[width=0.82\linewidth]{figures/app-shared-shell}
+    \caption[PeerToCP, peer-to-peer CRDT variant]{PeerToCP, peer-to-peer CRDT variant. Top: the main window, with the connection, the room, the online clients (each with a Request Run button), the compiler flags and the list of active shells on the left, and the shared code editor on the right, where another user's cursor, labeled \emph{second}, is visible. Bottom: a shared shell window running a compiled C++ program.}
+    \label{fig:4:app}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \input{figures/activity-diagram}
+    \caption{How the application is used: a high-level activity diagram.}
+    \label{fig:activity}
+\end{figure}
+
+When users open the application, they join the default room. They can edit the document, and synchronization runs continuously with the publish-subscribe pattern, so updates from other users arrive without having to be checked for, or polled. A user can compile and run the code on their own machine (the \emph{Spawn} button), or send a compilation request to any other user in the network (\emph{Request Run}). PeerToCP delivers the request to the chosen user without involving the other users in the network. The recipient's system compiles the code, runs the program, and adds a shell running it, with its own ID, to the list of shells that every client in the network can access. This list of shells and their contents is stored as a JavaScript object. Figure~\ref{fig:4:request-run} shows this exchange.
+
+\begin{figure}[htbp]
+    \centering
+    \input{figures/request-run}
+    \caption[Running a program on another user's machine]{Running a program on another user's machine. User A asks user B to run the code; B compiles it, runs it in a new shell and shares that shell with everyone. Keystrokes from any user go to B, the host, and the program's output is replicated to all users. In the peer-to-peer variant the messages travel directly between peers; in the client-server variants they go through the server.}
+    \label{fig:4:request-run}
+\end{figure}
+
+In Figure~\ref{fig:activity}, how the program shells and the document are synchronized depends on the variant. In the client-server architecture, user A's application connects to and synchronizes with the server; in the peer-to-peer architecture, it connects to and synchronizes with the other peers directly. Likewise, compilation requests and the messages carrying compilation results go directly between peers in the peer-to-peer architecture, but must go through the server in the client-server architecture.
+
+\section{Peer-to-Peer and Client-Server CRDT Variants}
+\label{sec:desain_crdt}
+
+Both CRDT variants use the Yjs library. Every peer or client holds a replica, a \texttt{Y.Doc}, which can contain several nested CRDTs. The code is a \texttt{Y.Text}, and the shells are a \texttt{Y.Map} that maps the ID of each shell to a \texttt{Y.Array} holding its contents. The peer-to-peer variant uses the y-webrtc network provider, modified with an interface for sending a message to a specific peer over an RTCDataChannel (Figure~\ref{crdt-p2p}). A keystroke typed by any peer is sent directly to the host peer running the program, which appends the program's response to the array of that shell.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[scale=0.62]{figures/arch-crdt-p2p}
+    \caption[The peer-to-peer CRDT variant]{The peer-to-peer CRDT variant: every client keeps a Yjs replica and is connected to every other client over WebRTC data channels; a WebSocket signaling server only introduces the peers to each other.}
+    \label{crdt-p2p}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[scale=0.62]{figures/arch-crdt-cs}
+    \caption[The client-server CRDT variant]{The client-server CRDT variant: every client keeps a Yjs replica and synchronizes it over WebSocket with the server, which keeps a replica of its own.}
+    \label{crdt-cs}
+\end{figure}
+
+The two CRDT variants differ only in their network provider. The client-server variant (Figure~\ref{crdt-cs}) uses y-websocket, also modified so that it can send a message to a specific client through the server. A network provider gives every peer or client in a distributed network an abstraction for communicating with the others. In the client-server architecture, the server adds one feature: persistence. The server keeps its own replica of the document, so the document survives even when no client is connected. Besides CRDTs, the client-server architecture is also used with operational transformation, in the third variant compared in this study, whose OT satisfies only TP1.
+
+\section{Client-Server Operational Transformation Variant}
+\label{sec:design_ot}
+
+For a document that holds only plain text, operational transformation that satisfies only TP1 can be implemented simply on a client-server architecture. This variant uses the @codemirror/collab library, which implements operational transformation and represents CodeMirror changes as deltas. The client keeps an array of local changes the server does not yet know about. It sends these changes periodically, together with the latest server version it has applied, through RPC over WebSocket; the RPC call does not block the client while it waits for the reply, before the next attempt to send. If the server already has a newer version than the one the changes are based on, it rejects them and tells the client to rebase: to apply the server's newer updates first, before trying again.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=11cm]{figures/arch-ot-cs}
+    \caption[The client-server OT variant]{The client-server OT variant: the server holds the authoritative sequence of versions, and each client keeps its pending local changes until the server accepts them.}
+    \label{fig:websocket_ot}
+\end{figure}
+
+Remote changes received from the server are transformed against the local changes the server does not know about yet; the local changes are then replaced by their versions transformed against the remote ones, and these are what the client sends next. Operational transformation happens only on the clients, and the server applies changes strictly in order, so every replica of the document converges to the same text. Figure~\ref{fig:websocket_ot} shows this architecture.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=7cm]{figures/ot-sync-1}\hfill
+    \includegraphics[width=7cm]{figures/ot-sync-2}
+    \caption[Synchronization in the OT variant]{Synchronization in the OT variant. Left: client A's two pending updates are rejected, because the server has moved on. Right: after pulling the server's new operations and transforming its own against them, client A's updates are accepted.}
+    \label{fig:ots}
+\end{figure}
+
+Figure~\ref{fig:ots} shows an example. The server cannot accept client A's two pending updates until client A has all of the server's latest versions. After pulling updates and receiving three new operations from the server, client A transforms its two pending updates against them. Client A's local document is now at version~4, and it can send its updates. The server appends client A's two operations, which brings it to version~6.
+
+The shells of running programs work the same way. When a client types a keystroke into one of the active shells, the keystroke is sent through a similar mechanism, but routed to the client that hosts, that is, runs, the program. The host sends the changes to the shell to the server periodically, as long as there are changes the server has not received, and when a change arrives the server notifies every client to pull it. Because only the host produces the shell's contents, these updates need no transformation function, unlike plain-text OT. Positions need no mapping either, because the cursor is always after the last character. Applying updates serially in this way prevents race conditions during network disruptions.
+
+\section{Evaluation Design}
+\label{sec:desain_evaluasi}
+
+The three architectures are back ends for the same editor interface, so the benchmark measures, end to end, what users experience. It consists of scenarios that cover the aspects being tested, run under conditions kept as identical as possible across the variants.
+
+The system is evaluated on the Compute Engine service of Google Cloud Platform. Each variant has its server on an instance in the \texttt{asia-southeast1-b} zone, on an \texttt{e2-medium} machine with 2~vCPUs, 4~GiB of RAM and Debian~11. This machine type was chosen so that the server's specifications do not limit the benchmark. No relay (TURN) server is provided for peers that cannot connect to each other in the peer-to-peer variant: the study assumes that the WebRTC connections between peers can always be set up.
+
+The users are \texttt{e2-small} virtual machines with 2~vCPUs, 2~GiB of RAM and Debian~11, all in the \texttt{asia-southeast2-a} zone, a region close to the servers, to approximate real-world use of PeerToCP. Four test scenarios are run, each with $n \in \{2, 4, 8\}$ users, to show how the system scales with the number of users in a network. The largest value of $n$ reflects the expected maximum number of users of PeerToCP, which is no more than eight. Table~\ref{tab:skenarios} summarizes the scenarios.
+
+\begin{table}[htbp]
+\centering
+\caption{Test scenarios.}
+\label{tab:skenarios}
+\begin{tabular}{@{}clccc@{}}
+\toprule
+\textbf{Scenario} & \textbf{Component} & \textbf{Measures latency} & \textbf{Duration (s)} & \textbf{Disconnection} \\
+\midrule
+1 & Code editor & No  & 180            & Yes, 30\,s \\
+2 & Shell       & No  & $\approx$100   & Yes, 20\,s \\
+3 & Code editor & Yes & 120            & No \\
+4 & Shell       & Yes & $\approx$100   & No \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Scenario 1: editing under stress.} The first scenario simulates a stream of edits in the code editor, with each number of peers $n$, for the scalability aspect. Every 100~milliseconds, for three minutes, each client performs one of three random operations, chosen with equal probability:
+
+\begin{enumerate}
+    \item inserting (\texttt{insert}) a random string of 2 to 5 characters;
+    \item deleting (\texttt{delete}) a range of 1 to 3 characters;
+    \item replacing (\texttt{replace}) a range of 2 to 5 characters with a random string of 2 to 5 characters.
+\end{enumerate}
+
+On each client, these operations grow the document by about 5 characters per second on average, and change about 41.67 characters per second, insertions and deletions together. The tests start at the same time on every client, using the operating system's clock, which is synchronized by default. Some error between the clocks is unavoidable and is assumed to be negligible; identical instances for every client reduce the bias from differences between them. In addition, each client disconnects from the network for 30~seconds, starting at a random time between 60 and 90~seconds into the test, so that the disconnection always falls between the first and the last minute. At the end, every editor is connected again, for a final synchronization with the other users. While an editor is disconnected, it keeps performing \texttt{insert}, \texttt{delete} and \texttt{replace} operations, which tests the local-first aspect.
+
+The first scenario is a stress test of the editing that can happen in the real world. After the test, the system waits for one minute, to give synchronization time to finish. The time of the last update is recorded and compared, for the responsiveness and scalability aspects. The hash of the final document is recorded on every client and compared across them, for the correctness aspect. The RAM, CPU and network activity of the first two clients of each run, and of the server, are recorded with the Netdata monitoring agent, for the lightweight and scalability aspects.
+
+\paragraph{Scenario 2: a shared shell under disconnection.} The second scenario uses the same environment as the first. It tests the shell with each number of clients $n$, by running a C++ program that prints 100 random unsigned 64-bit integers, waiting a random 500 to 1500~milliseconds before each one. Meanwhile, a 20-second network disconnection starts at a random time 10 to 40~seconds after the program starts. As in the first scenario, the last synchronization time, the device activity and the hash of every shell on every client are recorded and compared, to make sure that every user ends up with the same shell replica.
+
+\paragraph{Scenarios 3 and 4: latency.} The last two scenarios measure the latency of the code editor and of the shell, respectively. In the third scenario, the $n$ peers are set up as before, and each performs two kinds of operation: inserting a timestamp into the editor, and replacing a range of 10 to 15 characters with a timestamp. Each operation waits a random 500 to 1000~milliseconds, so that the operations do not all happen at a fixed period. Every client captures the timestamps it receives and measures the latency as the time between a timestamp being written and its arrival at another client. In the fourth scenario, every client runs a C++ program that prints 100 timestamps, with a random delay of 500 to 1500~milliseconds between them. Every client captures each timestamp and measures its latency in the same way, as the time between the host of the shell (the user running the program) adding the timestamp and each other user receiving it. Scenarios 3 and 4 have no disconnections, so that the data for the responsiveness aspect are as accurate as possible.

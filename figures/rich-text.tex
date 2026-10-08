@@ -1,0 +1,14 @@
+% Example of changes in a rich text editor (English redraw of
+% assets/skripsi/richtext.jpg). TikZ libraries: positioning, arrows.meta.
+\begin{tikzpicture}[
+  node distance=0.9cm,
+  sentence/.style={draw, line width=0.5pt, font=\small\rmfamily,
+    minimum width=5.6cm, minimum height=1.25cm, inner sep=4pt},
+  >={Stealth[length=2.2mm,width=1.8mm]},
+]
+  \node[sentence] (plain) {This is a sentence.};
+  \node[sentence, below=of plain] (bold) {This \textbf{is a} sentence.};
+  \node[sentence, below=of bold] (mixed) {This \textbf{is} \textbf{\itshape a} \textit{sentence}.};
+  \draw[->, line width=0.5pt] (plain) -- (bold);
+  \draw[->, line width=0.5pt] (bold) -- (mixed);
+\end{tikzpicture}%

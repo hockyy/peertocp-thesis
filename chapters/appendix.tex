@@ -1,0 +1,72 @@
+\chapter{Code and Experimental Setup}
+\label{appendix:implementation}
+
+All code, the client application and the test experiments of this study are available at \url{https://github.com/hockyy/peertocp}. Each variant of PeerToCP is a separate branch: \texttt{crdt-cs}, the client-server CRDT variant; \texttt{ot-cs}, the client-server operational transformation variant; and \texttt{crdt-p2p}, the peer-to-peer CRDT variant. Instructions for rerunning the tests and their scenarios are in the README.md of the \texttt{crdt-p2p} branch, the repository's default branch. The servers and the modified connection providers used by each branch are available at:
+
+\begin{itemize}
+    \item \texttt{crdt-cs}: \url{https://github.com/hockyy/y-websocket};
+    \item \texttt{crdt-p2p}: \url{https://github.com/hockyy/y-webrtc};
+    \item \texttt{ot-cs}: \url{https://github.com/hockyy/peertocp-ot-server}.
+\end{itemize}
+
+For the experiments, every instance was set up with the following commands.
+
+\begin{lstlisting}[language=bash]
+sudo apt install -y git wget screen nginx python-is-python3 g++ make
+sudo apt install -y build-essential clang libdbus-1-dev libgtk2.0-dev \
+                       libnotify-dev libgnome-keyring-dev libgconf2-dev \
+                       libasound2-dev libcap-dev libcups2-dev libxtst-dev \
+                       libxss1 libnss3-dev gcc-multilib g++-multilib libasound2 xvfb
+export DISPLAY=192.168.0.5:0.0
+curl https://my-netdata.io/kickstart.sh > /tmp/netdata-kickstart.sh && sh /tmp/netdata-kickstart.sh
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash
+source ~/.bashrc
+nvm install 16
+nvm use 16
+git clone [URL]
+
+# Use xvfb, because Debian has no desktop
+xvfb-run npm start
+\end{lstlisting}
+
+The measurements were downloaded and processed on a local machine with the following script, which fetches the evaluation logs.
+
+\begin{lstlisting}[language=bash]
+netd () {
+    curl "http://$1:19999/api/v1/data?chart=apps.mem&dimension=node \
+          &after=$2&points=0&group=average&gtime=0 \
+          &timeout=0&format=csv&options=seconds" \
+          > mem-$3.csv
+    curl "http://$1:19999/api/v1/data?chart=system.ip \
+          &after=$2&points=0&group=average&gtime=0 \
+          &timeout=0&format=csv&options=seconds" \
+          > network-$3.csv
+    curl "http://$1:19999/api/v1/data?chart=apps.cpu&dimension=node \
+          &after=$2&points=0&group=average&gtime=0 \
+          &timeout=0&format=csv&options=seconds" \
+          > cpu-$3.csv
+}
+
+scpd () {
+    scp -r hocky@$1:~/peertocpnext/out/ ./$2
+}
+\end{lstlisting}
+
+Every server ran NGINX with the following configuration.
+
+\begin{lstlisting}
+location / {
+    # First attempt to serve request as file, then
+    # as directory, then fall back to displaying a 404.
+    # try_files $uri $uri/ =404;
+    proxy_pass http://127.0.0.1:3000;
+
+    proxy_http_version  1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Real-IP $remote_addr;
+}
+\end{lstlisting}
+
+The raw measurements, and the notebook that visualizes and interprets them, are available at \url{https://github.com/hockyy/peertocp-benchmark}.

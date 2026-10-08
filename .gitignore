@@ -1,0 +1,13 @@
+dist/
+main.bbl
+main.pdf
+*.aux
+*.log
+*.blg
+*.out
+*.toc
+*.lof
+*.lot
+*.xdv
+*.synctex.gz
+__pycache__/

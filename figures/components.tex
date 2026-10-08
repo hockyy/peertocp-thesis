@@ -1,0 +1,74 @@
+% The components of one PeerToCP client (an Electron app): the renderer
+% process with the editor, the shared state and the shell windows; the main
+% process with the compiler and node-pty; and the network provider, one per
+% variant. TikZ libraries: arrows.meta. Colors from thesis.sty.
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  proc/.style={draw=accent, line width=0.8pt, rounded corners=3pt, fill=white},
+  frame/.style={draw=rulegray, line width=0.6pt, rounded corners=4pt},
+  title/.style={font=\sffamily\small\bfseries, text=accent, anchor=west, inner sep=0pt},
+  comp/.style={draw=black!60, line width=0.6pt, rounded corners=2pt, fill=white,
+    align=center, inner sep=2pt, minimum height=0.85cm},
+  alt/.style={draw=black!60, line width=0.6pt, rounded corners=2pt, fill=white,
+    dash pattern=on 3pt off 2pt, align=center, inner sep=2pt},
+  both/.style={line width=0.6pt, {Stealth[length=2.2mm,width=1.6mm]}-{Stealth[length=2.2mm,width=1.6mm]}},
+  one/.style={line width=0.6pt, -{Stealth[length=2.2mm,width=1.6mm]}},
+  lab/.style={font=\sffamily\footnotesize, inner sep=1.5pt},
+]
+  % ---- the client --------------------------------------------------------
+  \draw[frame] (0,0) rectangle (15.8,-5.8);
+  \node[title, text=black!70] at (0.2,-0.3) {PeerToCP client (Electron app)};
+
+  % ---- renderer process ----------------------------------------------------
+  \draw[proc] (0.2,-0.6) rectangle (9.9,-5.55);
+  \node[title] at (0.4,-0.9) {Renderer process (Chromium)};
+  \node[comp, text width=2.4cm] (cm) at (1.725,-2.6) {CodeMirror~6\\editor};
+  \node[comp, text width=2.4cm] (xt) at (1.725,-3.65) {\texttt{xterm.js}\\shell windows};
+  % shared state
+  \draw[draw=accent, line width=0.6pt, fill=accentlight, rounded corners=3pt]
+    (5.7,-1.2) rectangle (9.7,-5.35);
+  \node[title, font=\sffamily\footnotesize\bfseries] at (5.85,-1.45) {Shared state};
+  \draw[draw=black!60, line width=0.6pt, fill=white, rounded corners=2pt]
+    (5.85,-1.7) rectangle (9.55,-4.25);
+  \node[anchor=west, inner sep=0pt] at (6.0,-1.95) {Yjs \texttt{Y.Doc} (CRDT variants)};
+  \node[comp, minimum width=3.4cm] (ytext) at (7.7,-2.6) {\texttt{Y.Text}\\the code};
+  \node[comp, minimum width=3.4cm] (ymap) at (7.7,-3.65) {\texttt{Y.Map} of \texttt{Y.Array}\\the shells};
+  \node[alt, minimum width=3.7cm] (collab) at (7.7,-4.8)
+    {or, in the OT variant:\\[-1pt]\texttt{@codemirror/collab}};
+  % bindings
+  \draw[both] (cm) -- (ytext);
+  \node[lab, above] at (4.35,-2.6) {\texttt{y-codemirror.next}};
+  \draw[both] (xt) -- (ymap);
+
+  % ---- main process ----------------------------------------------------------
+  \draw[proc] (10.9,-0.6) rectangle (15.6,-3.9);
+  \node[title] at (11.1,-0.9) {Main process (Node.js)};
+  \node[comp, text width=4.2cm, minimum height=0.6cm] (gpp) at (13.25,-1.6)
+    {system compiler (\texttt{g++})};
+  \node[comp, text width=4.2cm] (pty) at (13.25,-3.0)
+    {\texttt{node-pty}\\[-1pt]spawns programs in pseudoterminals};
+  \draw[one] (gpp) -- node[lab, right] {executable} (pty);
+  \node[comp, text width=4.2cm, minimum height=0.6cm, fill=codebg] (prog) at (13.25,-5.15)
+    {compiled program};
+  \draw[both] (pty) -- node[lab, right] {spawns; I/O} (prog);
+  % renderer <-> main
+  \draw[both] (9.9,-2.25) -- node[lab, above] {IPC} (10.9,-2.25);
+
+  % ---- network provider -------------------------------------------------------
+  \draw[frame, draw=black!60] (0,-6.4) rectangle (15.8,-8.6);
+  \node[title, text=black!70] at (0.2,-6.68) {Network provider (one per variant)};
+  \foreach \plib/\pdest/\pvar [count=\i] in {
+      y-webrtc/{other peers (WebRTC data channels; WebSocket to the signaling server)}/peer-to-peer CRDT,
+      y-websocket/{server (WebSocket)}/client-server CRDT,
+      rpc-websockets/{OT server (WebSocket RPC)}/client-server OT} {
+    \pgfmathsetmacro{\y}{-7.17-0.5*(\i-1)}
+    \node[anchor=west, inner sep=0pt, font=\ttfamily\footnotesize\bfseries, text=accent] at (0.4,\y) {\plib};
+    \draw[one] (2.75,\y) -- (3.35,\y);
+    \node[anchor=west, inner sep=0pt] at (3.5,\y) {\pdest};
+    \node[anchor=east, inner sep=0pt, font=\sffamily\footnotesize\itshape, text=black!60] at (15.6,\y) {\pvar};
+  }
+  \draw[rulegray, line width=0.4pt] (0.4,-7.42) -- (15.6,-7.42);
+  \draw[rulegray, line width=0.4pt] (0.4,-7.92) -- (15.6,-7.92);
+  % shared state <-> provider
+  \draw[both, accent, line width=1pt] (7.7,-5.35) -- node[lab, right, text=accent] {updates} (7.7,-6.4);
+\end{tikzpicture}%

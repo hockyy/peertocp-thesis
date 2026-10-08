@@ -1,0 +1,35 @@
+\chapter{Research Methodology}
+\label{bab:3}
+
+This chapter describes the methodology followed to develop PeerToCP: the research approach, its stages, and the aspects on which the system is evaluated.
+
+\section{Approach and Stages}
+\label{sec:pendekatan}
+
+This study takes an experimental approach. Quantitative and qualitative data are collected for each variant of PeerToCP; all variants implement their business logic behind the same user interface. The independent variables are the network architecture of PeerToCP and the method it uses to resolve conflicts and synchronize data. The dependent variables are defined by the aspects of the system listed in Section~\ref{sec:evaluasi}. Quantitative data come from benchmarking and are analyzed descriptively and inferentially, to compare the performance of the variants. Qualitative data come from an objective description of the system. Figure~\ref{bagan} outlines the stages of the study.
+
+\begin{figure}[htbp]
+    \centering
+    \input{figures/research-flow}
+    \caption{Stages of the study.}
+    \label{bagan}
+\end{figure}
+
+The research problem was motivated by the potential of WebRTC, a web technology, and of several algorithms for synchronizing data in a distributed network, each with its own advantages and disadvantages. The idea also grew out of a practical need in competitive programming: a simple integrated development environment (IDE) in which code is written collaboratively in real time, and in which a program run on one client in the network can be used by every other client in it. This problem gave rise to the research questions of the study.
+
+With those questions as input, a literature review covered the relevant technologies and prior work, and produced the theoretical foundation of the study. The review compared related studies in terms of performance, implementation complexity, how they work, and the proofs of correctness of particular technologies and algorithms, to establish how far the technology on this topic had advanced. The study then moved on to designing and implementing PeerToCP. Three variants were tested: operational transformation (OT) on a client-server architecture, conflict-free replicated data types (CRDTs) on a client-server architecture, and CRDTs on a peer-to-peer architecture. The finished system was evaluated objectively on aspects that represent its performance and scalability. These aspects, given in Section~\ref{sec:evaluasi}, give a clear basis for comparing one implementation with another.
+
+\section{Evaluation Method and Scenarios}
+\label{sec:evaluasi}
+
+Based on observations of other real-time collaborative applications, the evaluation covers five essential aspects of each variant of PeerToCP.
+
+\begin{enumerate}
+    \item \textbf{Correctness:} every variant of PeerToCP must be correct, meaning that the data replicas kept in sync end up converged and identical.
+    \item \textbf{Lightweight:} the application runs with minimal resources and does not disturb other applications on the same operating system. An application that uses excessive resources to do its job is less likely to be adopted.
+    \item \textbf{Responsiveness:} the data replicas on every client are synchronized with a low, usable latency. Every client of a real-time collaborative application should see minimal delay, so that the experience feels real-time.
+    \item \textbf{Local-first:} an operation is applied to the local replica as soon as the user makes it, without contacting other clients or servers in the network.
+    \item \textbf{Scalability:} this aspect is tied to all the others, since the original motivation for a peer-to-peer architecture is to improve service availability by reducing the load on the server. The application's performance depends on the number of clients or users in a network, so scalability matters for a distributed application~\citep{leibnitz2007peer}.
+\end{enumerate}
+
+The quantitative and qualitative data from benchmarking are then analyzed, and the conclusions point out opportunities for optimization and for further research.

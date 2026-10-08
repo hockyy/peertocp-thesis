@@ -1,0 +1,28 @@
+\chapter{Conclusion}
+\label{bab:6}
+
+This chapter concludes the study. It summarizes how each variant of PeerToCP was implemented and what the evaluation implies, and it outlines further development and experiments that could address the weaknesses found and lead to better systems of this kind.
+
+\section{Conclusions}
+\label{sec:kesimpulan}
+
+This study set out to build PeerToCP, a real-time collaborative code editor with a shared shell. The application keeps data consistent in a distributed system with several architectures and algorithms: the operational transformation (OT) algorithm on a client-server architecture, the conflict-free replicated data type (CRDT) data structure on a client-server architecture, and a CRDT on a WebRTC-based peer-to-peer architecture.
+
+The OT variant of PeerToCP relies on transformation property~1 (TP1) to keep every user's data in a network consistent. Every change is represented as an update operation, and both clients and server store the sequence of these operations. A client synchronizes its document with the other clients in the network by pulling updates from the server. A client may push updates to the server only if it already has the server's latest version. Otherwise, the client receives the server's newest operations and applies operational transformation to all of its local operations that the server has not yet accepted. The shared shell follows the same approach as the code editor, but its operational transformation is taken to run in constant time, because every operation is an append to an array.
+
+Besides OT, there is the CRDT variant, which is essentially a further development of the OT algorithm with an additional data structure. PeerToCP uses the Yjs library, which implements the YATA CRDT. Every character in this data structure has its own ID. YATA stores the characters as a linear sequence, in which the position of a character is represented by its relation to the characters before and after it. This data structure is connected to a client-server network provider through the WebSocket-based y-websocket library. The peer-to-peer CRDT variant instead uses the WebRTC-based y-webrtc library, which uses WebSocket to talk to its signaling server. Both network providers give Yjs an abstraction for communicating with the other users in the network and synchronizing documents.
+
+Every variant of PeerToCP has been shown correct theoretically, by the developers of the code it builds on, and empirically, through the four scenarios of this study. The main variant, the peer-to-peer CRDT, achieved the best latency and lower resource usage in the user's application. The OT variant suffered from excessive network bandwidth, because of a suboptimal protocol and poor concurrency of updates. This happens when every client in a network group keeps pushing updates at the same time. The server then tends to reject the update of a client whose local operations have piled up, because it gives priority to the version increments of other clients that push smaller updates.
+
+Each variant also has its own strengths and weaknesses in how lightweight it is, on the server and in the user's application. Based on the test scenarios of this experiment, for groups of $n \leq 8$ users located close to one another, PeerToCP with the WebRTC-based peer-to-peer CRDT is the best choice. Its server load is also much lower than in the client-server architectures: in the peer-to-peer variant every computation happens on the users' own machines, so the signaling server only handles users connecting to and disconnecting from a network.
+
+For larger network groups, the client-server CRDT variant is worth considering, because its data transmission grows more slowly with the number of clients. It is also an option when some users in the network cannot keep a WebRTC connection, because they are far apart, or because a network mechanism prevents them from connecting directly to other peers.
+
+\section{Future Work}
+\label{sec:saran}
+
+The results suggest developing the system further into an adaptive network that changes with its conditions. This could make the service more reliable for all its users. On the algorithm side, other, more efficient variants of operational transformation or CRDTs could replace the ones PeerToCP uses now, to lower latency and the resources the application needs. One promising optimization of the CRDT variants is to modify the CRDT map (dictionary) that stores the shell replicas: it should exploit the fact that data is only ever appended to the end of an array, with no deletions or changes at any other index.
+
+Beyond algorithms, networking and web technologies also deserve attention. HTTP/3, the newest version of HTTP at the time of this study, provides WebTransport, which could be studied as a replacement for WebSocket. WebTransport aims to offer a better programming interface, with all the features of WebSocket and a lower latency. Scalability to larger numbers of users could be tested by changing the test harness so that it no longer drives the user interface end to end. The front end and the human-computer interaction (HCI) aspects of PeerToCP could also be improved and studied.
+
+The application could also be extended to a web version that runs without a desktop framework such as Electron, with the drawback that a web client cannot host a shell for every user in the network to share. Other technologies and programming languages with better performance and lighter resource usage than Node.js and Chromium in Electron could replace the current framework; Tauri and Qt are among the alternatives considered for PeerToCP.

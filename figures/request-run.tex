@@ -1,0 +1,61 @@
+% Request Run and a shared shell: a sequence diagram with three users, B the
+% host that compiles and runs the program. Time flows down.
+% TikZ libraries: arrows.meta. Colors from thesis.sty.
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  head/.style={draw=accent, fill=accentlight, line width=0.6pt, rounded corners=2pt,
+    minimum width=2.3cm, minimum height=0.75cm, inner sep=2pt,
+    font=\sffamily\small\bfseries, align=center},
+  life/.style={draw=rulegray, line width=0.6pt},
+  msg/.style={line width=0.6pt, -{Stealth[length=2.2mm,width=1.6mm]}},
+  rep/.style={msg, accent},
+  lab/.style={above, inner sep=1.5pt},
+  act/.style={draw=rulegray, fill=codebg, line width=0.6pt, rounded corners=2pt,
+    inner sep=2.5pt, minimum height=0.5cm},
+  stepnum/.style={circle, fill=accent, text=white, font=\sffamily\scriptsize\bfseries,
+    inner sep=0pt, minimum size=4mm},
+]
+  % ---- lifelines -------------------------------------------------------
+  \def\xA{0}  \def\xB{5.2}  \def\xC{10.4}  \def\xN{-1.8}
+  \def\yEnd{-6.6}
+  \foreach \x in {\xA,\xB,\xC} \draw[life] (\x,-0.375) -- (\x,\yEnd);
+  \node[head] at (\xA,0) {User A};
+  \node[head] at (\xB,0) {User B (host)};
+  \node[head] at (\xC,0) {User C};
+
+  % ---- 1. A asks B to run the code ----------------------------------------
+  \node[stepnum] at (\xN,-1.0) {1};
+  \node[act] at (\xA,-1.0) {\emph{Request Run} for B};
+  \draw[msg] (\xA,-1.65) -- node[lab] {run request (code, flags)} (\xB,-1.65);
+
+  % ---- 2. B compiles --------------------------------------------------------
+  \node[stepnum] at (\xN,-2.3) {2};
+  \node[act] at (\xB,-2.3) {compile with \texttt{g++}};
+
+  % ---- 3. B runs it in a new shell -------------------------------------------
+  \node[stepnum] at (\xN,-2.95) {3};
+  \node[act] at (\xB,-2.95) {spawn shell (\texttt{node-pty})};
+
+  % ---- 4. the new shell is shared ------------------------------------------
+  \node[stepnum] at (\xN,-3.6) {4};
+  \node[act] at (\xB,-3.6) {add the shell to the shell list};
+  \draw[rep] (\xB,-4.25) -- node[lab] {shell list update} (\xA,-4.25);
+  \draw[rep] (\xB,-4.25) -- node[lab] {shell list update} (\xC,-4.25);
+  \fill[accent] (\xB,-4.25) circle (1.4pt);
+
+  % ---- 5. C types into the shell -------------------------------------------
+  \node[stepnum] at (\xN,-4.9) {5};
+  \draw[msg] (\xC,-4.9) -- node[lab] {keystroke} (\xB,-4.9);
+
+  % ---- 6. the program's output is replicated --------------------------------
+  \node[stepnum] at (\xN,-5.55) {6};
+  \node[act] at (\xB,-5.55) {append the output to the shell's array};
+  \draw[rep] (\xB,-6.2) -- node[lab] {shell output} (\xA,-6.2);
+  \draw[rep] (\xB,-6.2) -- node[lab] {shell output} (\xC,-6.2);
+  \fill[accent] (\xB,-6.2) circle (1.4pt);
+
+  % ---- note ------------------------------------------------------------------
+  \node[draw=rulegray, fill=codebg, line width=0.6pt, rounded corners=2pt, inner sep=3pt,
+    font=\sffamily\footnotesize\itshape, text=black!70] at (\xB,-7.1)
+    {peer-to-peer: messages go directly between peers; client-server: via the server};
+\end{tikzpicture}%

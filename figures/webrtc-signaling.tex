@@ -1,0 +1,69 @@
+% Setting up a WebRTC connection: a sequence diagram with four lifelines
+% (Peer A, the signaling server, Peer B and a STUN server). Time flows down.
+% TikZ libraries: arrows.meta. Colors from thesis.sty.
+\begin{tikzpicture}[
+  font=\sffamily\footnotesize,
+  head/.style={draw=accent, fill=accentlight, line width=0.6pt, rounded corners=2pt,
+    minimum width=2.3cm, minimum height=0.75cm, inner sep=2pt,
+    font=\sffamily\small\bfseries, align=center},
+  life/.style={draw=rulegray, line width=0.6pt},
+  msg/.style={line width=0.6pt, -{Stealth[length=2.2mm,width=1.6mm]}},
+  ice/.style={msg, black!65, dash pattern=on 3pt off 2pt},
+  conn/.style={line width=1.4pt, rulegray, {Stealth[length=2.6mm,width=2.2mm]}-{Stealth[length=2.6mm,width=2.2mm]}},
+  lab/.style={above, inner sep=1.5pt},
+  act/.style={draw=rulegray, fill=codebg, line width=0.6pt, rounded corners=2pt,
+    inner sep=2.5pt, minimum height=0.5cm},
+  stepnum/.style={circle, fill=accent, text=white, font=\sffamily\scriptsize\bfseries,
+    inner sep=0pt, minimum size=4mm},
+]
+  % ---- lifelines -------------------------------------------------------
+  \def\xA{0}  \def\xS{4.1}  \def\xB{8.7}  \def\xT{12.3}
+  \def\yEnd{-10.35}
+  \foreach \x in {\xA,\xS,\xB,\xT} \draw[life] (\x,-0.375) -- (\x,\yEnd);
+  \node[head] at (\xA,0) {Peer A};
+  \node[head] at (\xS,0) {Signaling\\[-1pt]server};
+  \node[head] at (\xB,0) {Peer B};
+  \node[head] at (\xT,0) {STUN\\[-1pt]server};
+  \def\xN{-1.8}
+
+  % ---- 0. open WebSocket connections -----------------------------------
+  \node[stepnum] at (\xN,-1.0) {0};
+  \draw[conn] (\xA,-1.0) -- node[lab, text=black!65] {WebSocket} (\xS,-1.0);
+  \draw[conn] (\xS,-1.0) -- node[lab, text=black!65] {WebSocket} (\xB,-1.0);
+
+  % ---- 1. offer ---------------------------------------------------------
+  \node[stepnum] at (\xN,-1.75) {1};
+  \node[act] at (\xA,-1.75) {create offer};
+  \draw[msg] (\xA,-2.4) -- node[lab] {offer (SDP)} (\xS,-2.4);
+  \draw[msg] (\xS,-2.8) -- node[lab] {offer (SDP)} (\xB,-2.8);
+
+  % ---- 2. answer ----------------------------------------------------------
+  \node[stepnum] at (\xN,-3.45) {2};
+  \node[act] at (\xB,-3.45) {create answer};
+  \draw[msg] (\xB,-4.1) -- node[lab] {answer (SDP)} (\xS,-4.1);
+  \draw[msg] (\xS,-4.5) -- node[lab] {answer (SDP)} (\xA,-4.5);
+
+  % ---- 3. STUN and trickled ICE candidates ------------------------------
+  \node[stepnum] at (\xN,-5.2) {3};
+  % A's labels sit between the server's and B's lifelines, which they cross.
+  \draw[msg] (\xA,-5.2) -- (\xT,-5.2)
+    node[lab] at ({(\xS+\xB)/2},-5.2) {binding request};
+  \draw[msg] (\xT,-5.65) -- (\xA,-5.65)
+    node[lab] at ({(\xS+\xB)/2},-5.65) {binding response (public IP, port)};
+  \draw[ice] (\xA,-6.25) -- node[lab] {ICE candidate} (\xS,-6.25);
+  \draw[ice] (\xS,-6.65) -- node[lab] {ICE candidate} (\xB,-6.65);
+  \draw[msg] (\xB,-7.25) -- node[lab] {binding request} (\xT,-7.25);
+  \draw[msg] (\xT,-7.7) -- node[lab] {binding response} (\xB,-7.7);
+  \draw[ice] (\xB,-8.3) -- node[lab] {ICE candidate} (\xS,-8.3);
+  \draw[ice] (\xS,-8.7) -- node[lab] {ICE candidate} (\xA,-8.7);
+
+  % ---- 4. direct data channel ----------------------------------------------
+  \node[stepnum] at (\xN,-9.55) {4};
+  \draw[line width=1.8pt, accent,
+    {Stealth[length=3.2mm,width=2.8mm]}-{Stealth[length=3.2mm,width=2.8mm]}]
+    (\xA,-9.55) -- (\xB,-9.55);
+  \node[above, fill=white, inner sep=1.5pt, yshift=1.5pt, text=accent, font=\sffamily\footnotesize\bfseries]
+    at (\xS,-9.55) {RTCDataChannel (direct)};
+  \node[below, fill=white, inner sep=1.5pt, yshift=-2pt, font=\sffamily\footnotesize\itshape, text=black!65]
+    at (\xS,-9.55) {or via a TURN relay if no direct route works};
+\end{tikzpicture}%

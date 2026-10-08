@@ -1,0 +1,131 @@
+% thesis.sty: the look of the English edition of the PeerToCP thesis.
+% Plain pdfLaTeX packages only (TeX Live), so arXiv builds it as is.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{thesis}[2026/10/08 PeerToCP thesis style]
+
+% --- Fonts and text ---------------------------------------------------------
+\RequirePackage{iftex}
+\iftutex
+  % XeTeX/LuaTeX (e.g. Tectonic): libertinus loads the OpenType fonts.
+  \RequirePackage{libertinus}
+  \setmonofont[Scale=0.88,BoldFont=Inconsolatazi4-Bold.otf]{Inconsolatazi4-Regular.otf}
+\else
+  % pdfLaTeX (arXiv): Type 1 fonts.
+  \RequirePackage[T1]{fontenc}
+  \RequirePackage[utf8]{inputenc}
+  \RequirePackage{libertinus}
+  \RequirePackage[scaled=0.88]{zi4}
+\fi
+\RequirePackage{microtype}
+\RequirePackage{setspace}
+\setstretch{1.12}
+\RequirePackage[a4paper,margin=2.5cm,bottom=3cm,headsep=0.8cm,headheight=14pt]{geometry}
+\setlength{\parskip}{0.35em}
+\setlength{\parindent}{0pt}
+\clubpenalty=10000
+\widowpenalty=10000
+
+% --- Color ------------------------------------------------------------------
+\RequirePackage{xcolor}
+\definecolor{accent}{HTML}{1D4E89}
+\definecolor{accentlight}{HTML}{E8EEF6}
+\definecolor{rulegray}{HTML}{9AA3AD}
+\definecolor{codebg}{HTML}{F5F6F8}
+
+% --- Figures, tables, math, lists ------------------------------------------
+\RequirePackage{graphicx}
+\RequirePackage{amsmath}
+\RequirePackage{array,booktabs,multirow,float}
+\RequirePackage{enumitem}
+\setlist{itemsep=0.15em,topsep=0.4em}
+\RequirePackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric,shapes.misc,fit,calc,backgrounds}
+\RequirePackage{caption}
+\DeclareCaptionFont{accent}{\color{accent}}
+\captionsetup{font=small,labelfont={bf,sf,accent},labelsep=period,margin=0.5cm}
+\captionsetup[table]{position=top,skip=6pt}
+\renewcommand{\arraystretch}{1.15}
+
+% --- Chapter and section headings ------------------------------------------
+\RequirePackage{titlesec}
+\titleformat{\chapter}[display]
+  {\normalfont\sffamily\color{accent}}
+  {\fontsize{11}{13}\selectfont\MakeUppercase{\chaptertitlename}\hspace{0.4em}%
+   {\fontsize{38}{38}\selectfont\bfseries\thechapter}}
+  {0.6em}
+  {\color{black}\fontsize{24}{28}\selectfont\bfseries}
+  [\vspace{0.6em}{\color{accent}\titlerule[1pt]}]
+\titleformat{name=\chapter,numberless}[block]
+  {\normalfont\sffamily\fontsize{24}{28}\selectfont\bfseries}
+  {}{0pt}{}
+  [\vspace{0.6em}{\color{accent}\titlerule[1pt]}]
+\titlespacing*{\chapter}{0pt}{0pt}{2.2em}
+\titleformat{\section}
+  {\normalfont\sffamily\Large\bfseries}{\color{accent}\thesection}{0.8em}{}
+\titleformat{\subsection}
+  {\normalfont\sffamily\large\bfseries}{\color{accent}\thesubsection}{0.8em}{}
+\titleformat{\subsubsection}
+  {\normalfont\sffamily\normalsize\bfseries}{\color{accent}\thesubsubsection}{0.8em}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+\titlespacing*{\subsubsection}{0pt}{1em}{0.3em}
+
+% --- Running headers --------------------------------------------------------
+\RequirePackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\chaptermark}[1]{\markboth{%
+  \ifnum\value{chapter}>0 \thechapter.\hspace{0.5em}\fi #1}{}}
+\fancyhead[L]{\small\sffamily\color{rulegray}\nouppercase{\leftmark}}
+\fancyhead[R]{\small\sffamily\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{{\color{rulegray}\hrule height\headrulewidth width\headwidth}}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\small\sffamily\thepage}%
+  \renewcommand{\headrulewidth}{0pt}}
+
+% --- Table of contents ------------------------------------------------------
+\RequirePackage{titletoc}
+\titlecontents{chapter}[1.8em]{\addvspace{0.6em}\sffamily\bfseries}
+  {\contentslabel{1.8em}}{\hspace*{-1.8em}}{\hfill\contentspage}
+\titlecontents{section}[4.2em]{}{\contentslabel{2.4em}}{\hspace*{-2.4em}}
+  {\titlerule*[0.6pc]{.}\contentspage}
+\titlecontents{subsection}[7.4em]{\small}{\contentslabel{3.2em}}{\hspace*{-3.2em}}
+  {\titlerule*[0.6pc]{.}\contentspage}
+\titlecontents{figure}[2.6em]{}{\contentslabel{2.6em}}{\hspace*{-2.6em}}
+  {\titlerule*[0.6pc]{.}\contentspage}
+\titlecontents{table}[2.6em]{}{\contentslabel{2.6em}}{\hspace*{-2.6em}}
+  {\titlerule*[0.6pc]{.}\contentspage}
+
+% --- Code listings ----------------------------------------------------------
+\RequirePackage{listings}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  backgroundcolor=\color{codebg},
+  frame=leftline,
+  framerule=2pt,
+  rulecolor=\color{accent},
+  xleftmargin=8pt,
+  framexleftmargin=6pt,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  tabsize=2,
+  upquote=true,
+  commentstyle=\color{rulegray},
+  keywordstyle=\color{accent},
+  aboveskip=0.8em,
+  belowskip=0.8em,
+}
+\renewcommand{\lstlistingname}{Listing}
+
+% --- Citations and links ----------------------------------------------------
+\RequirePackage[natbibapa]{apacite}
+\RequirePackage[colorlinks=true,linkcolor=accent,citecolor=accent,urlcolor=accent]{hyperref}
+\urlstyle{same}
+
+% --- Macros used in the chapters --------------------------------------------
+\newcommand{\op}{\texttt{op}}
+\newcommand{\variant}[1]{\textsf{#1}}
+
+\endinput
